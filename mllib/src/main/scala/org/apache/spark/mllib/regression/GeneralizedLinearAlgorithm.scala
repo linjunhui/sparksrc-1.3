@@ -232,6 +232,7 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
      *
      * Currently, it's only enabled in LogisticRegressionWithLBFGS
      */
+    // 是否进行降维，默认false
     val scaler = if (useFeatureScaling) {
       new StandardScaler(withStd = true, withMean = false).fit(input.map(_.features))
     } else {
@@ -240,11 +241,12 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
 
     // Prepend an extra variable consisting of all 1.0's for the intercept.
     // TODO: Apply feature scaling to the weight vector instead of input data.
+    // 增加偏置项，偏置项：θ
     val data =
-      if (addIntercept) {
-        if (useFeatureScaling) {
+      if (addIntercept) { // 添加截距
+        if (useFeatureScaling) { // 缩放特征值并添偏置
           input.map(lp => (lp.label, appendBias(scaler.transform(lp.features)))).cache()
-        } else {
+        } else {  // 不缩放特征值并添偏置
           input.map(lp => (lp.label, appendBias(lp.features))).cache()
         }
       } else {
@@ -260,13 +262,14 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
      * from the prior probability distribution of the outcomes; for linear regression,
      * the intercept should be set as the average of response.
      */
+      // 初始化权重，包括增加偏置项
     val initialWeightsWithIntercept = if (addIntercept && numOfLinearPredictor == 1) {
       appendBias(initialWeights)
     } else {
       /** If `numOfLinearPredictor > 1`, initialWeights already contains intercepts. */
       initialWeights
     }
-
+    // 权重训练，进行梯度下降学习，返回最优权重
     val weightsWithIntercept = optimizer.optimize(data, initialWeightsWithIntercept)
 
     val intercept = if (addIntercept && numOfLinearPredictor == 1) {

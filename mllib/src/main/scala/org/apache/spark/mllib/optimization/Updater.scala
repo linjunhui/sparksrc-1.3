@@ -66,6 +66,7 @@ abstract class Updater extends Serializable {
  * A simple updater for gradient descent *without* any regularization.
  * Uses a step-size decreasing with the square root of the number of iterations.
  */
+// 原权重向量、梯度向量、迭代步长、
 @DeveloperApi
 class SimpleUpdater extends Updater {
   override def compute(

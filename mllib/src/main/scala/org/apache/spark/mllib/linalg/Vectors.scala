@@ -37,6 +37,7 @@ import org.apache.spark.sql.types._
  *
  * Note: Users should not implement this interface.
  */
+//　定义一个Vector的接口
 @SQLUserDefinedType(udt = classOf[VectorUDT])
 sealed trait Vector extends Serializable {
 
@@ -212,6 +213,7 @@ object Vectors {
   /**
    * Creates a dense vector from a double array.
    */
+  // 用数组创建向量
   def dense(values: Array[Double]): Vector = new DenseVector(values)
 
   /**
@@ -475,9 +477,11 @@ object Vectors {
 /**
  * A dense vector represented by a value array.
  */
+// 稠密向量继承自Vector
 @SQLUserDefinedType(udt = classOf[VectorUDT])
 class DenseVector(val values: Array[Double]) extends Vector {
 
+  // 实现了获取向量维度 的方法 size
   override def size: Int = values.length
 
   override def toString: String = values.mkString("[", ",", "]")

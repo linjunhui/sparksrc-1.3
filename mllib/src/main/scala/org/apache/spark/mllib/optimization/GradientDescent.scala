@@ -102,6 +102,7 @@ class GradientDescent private[mllib] (private var gradient: Gradient, private va
    * @param initialWeights initial weights
    * @return solution vector
    */
+  // 执行梯度下降算法进行训练
   @DeveloperApi
   def optimize(data: RDD[(Double, Vector)], initialWeights: Vector): Vector = {
     val (weights, _) = GradientDescent.runMiniBatchSGD(
@@ -155,9 +156,9 @@ object GradientDescent extends Logging {
       regParam: Double,
       miniBatchFraction: Double,
       initialWeights: Vector): (Vector, Array[Double]) = {
-
+    // 创建一个 迭代次数大小的 ArrayBuffer，存储每次迭代后的结果
     val stochasticLossHistory = new ArrayBuffer[Double](numIterations)
-
+    // 数据样本个数
     val numExamples = data.count()
 
     // if no data, return initial weights to avoid NaNs
@@ -165,12 +166,12 @@ object GradientDescent extends Logging {
       logWarning("GradientDescent.runMiniBatchSGD returning initial weights, no data found")
       return (initialWeights, stochasticLossHistory.toArray)
     }
-
+    // 样本数　乘以　每次学习样本的比例， 小于1，就提示比例太小
     if (numExamples * miniBatchFraction < 1) {
       logWarning("The miniBatchFraction is too small")
     }
 
-    // Initialize weights as a column vector
+    // Initialize weights as a column vector， 初始化权重成列向量
     var weights = Vectors.dense(initialWeights.toArray)
     val n = weights.size
 
@@ -178,17 +179,22 @@ object GradientDescent extends Logging {
      * For the first iteration, the regVal will be initialized as sum of weight squares
      * if it's L2 updater; for L1 updater, the same logic is followed.
      */
+    // 在第一次进行迭代的时候，regVal被初始化为权重的平方和，regParam默认值0.0
+    // new Array[Double](weights.size) 创建数组大小是weghts.size，元素全是0
+    // 用数组元素构建了一个向量
     var regVal = updater.compute(
       weights, Vectors.dense(new Array[Double](weights.size)), 0, 1, regParam)._2
 
+    // 开始进行迭代
     for (i <- 1 to numIterations) {
+      // 创建权重的广播向量
       val bcWeights = data.context.broadcast(weights)
-      // Sample a subset (fraction miniBatchFraction) of the total data
+      // Sample a subset (fraction miniBatchFraction) of the total data 按比例从data中取出样本
       // compute and sum up the subgradients on this subset (this is one map-reduce)
       val (gradientSum, lossSum, miniBatchSize) = data.sample(false, miniBatchFraction, 42 + i)
-        .treeAggregate((BDV.zeros[Double](n), 0.0, 0L))(
+        .treeAggregate((BDV.zeros[Double](n), 0.0, 0L))(  // zeroValue
           seqOp = (c, v) => {
-            // c: (grad, loss, count), v: (label, features)
+            // c: (grad, loss, count), v: (label, features) LeastSquaresGradient或其他中的compute
             val l = gradient.compute(v._2, v._1, bcWeights.value, Vectors.fromBreeze(c._1))
             (c._1, c._2 + l, c._3 + 1)
           },

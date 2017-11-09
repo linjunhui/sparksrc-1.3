@@ -985,8 +985,11 @@ abstract class RDD[T: ClassTag](
     }
     val cleanSeqOp = context.clean(seqOp)
     val cleanCombOp = context.clean(combOp)
+    // 定义函数，对迭代器进行aggregate操作
     val aggregatePartition = (it: Iterator[T]) => it.aggregate(zeroValue)(cleanSeqOp, cleanCombOp)
+    //  对每个RDD使用函数操作，返回新的RDD
     var partiallyAggregated = mapPartitions(it => Iterator(aggregatePartition(it)))
+    // 新RDD的分区数
     var numPartitions = partiallyAggregated.partitions.size
     val scale = math.max(math.ceil(math.pow(numPartitions, 1.0 / depth)).toInt, 2)
     // If creating an extra level doesn't help reduce the wall-clock time, we stop tree aggregation.

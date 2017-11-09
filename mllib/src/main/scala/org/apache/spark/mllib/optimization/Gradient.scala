@@ -277,7 +277,9 @@ class LeastSquaresGradient extends Gradient {
       label: Double,
       weights: Vector,
       cumGradient: Vector): Double = {
+    // dot 矩阵相乘, 这里是 行向量 X 列向量 乘出来是一个数
     val diff = dot(data, weights) - label
+    // a, x, y y+=a*x
     axpy(diff, data, cumGradient)
     diff * diff / 2.0
   }
