@@ -78,14 +78,20 @@ object LinearRegressionModel extends Loader[LinearRegressionModel] {
  * its corresponding right hand side label y.
  * See also the documentation for the precise formulation.
  */
+// SGD(stochastic gradient descent) 随机梯度下降算法
+// 主构造器要求传入 学习步长、迭代次数、每次参与计算样本的比例
+// run 方法继承自 GeneralizedLinearAlgorithm
 class LinearRegressionWithSGD private[mllib] (
     private var stepSize: Double,
     private var numIterations: Int,
     private var miniBatchFraction: Double)
   extends GeneralizedLinearAlgorithm[LinearRegressionModel] with Serializable {
 
+  // 采用最小平方损失函数的梯度下降法，用于线性回归
   private val gradient = new LeastSquaresGradient()
+  // 采用简单梯度更新方法，无正则化
   private val updater = new SimpleUpdater()
+  // 更具梯度下降方法、梯度更新方法，新建梯度优化计算方法,optimizer(优化器)
   override val optimizer = new GradientDescent(gradient, updater)
     .setStepSize(stepSize)
     .setNumIterations(numIterations)
@@ -103,8 +109,9 @@ class LinearRegressionWithSGD private[mllib] (
 }
 
 /**
- * Top-level methods for calling LinearRegression.
+ * Top-level methods for calling LinearRegression.*
  */
+// LinearRegressionWithSGD的伴生对象，包含train静态方法，用于训练回归模型
 object LinearRegressionWithSGD {
 
   /**
@@ -121,12 +128,16 @@ object LinearRegressionWithSGD {
    * @param initialWeights Initial set of weights to be used. Array should be equal in size to
    *        the number of features in the data.
    */
+
+  // 训练线性回归模型，训练样本RDD格式为(lable[标签], features[特征])
   def train(
-      input: RDD[LabeledPoint],
-      numIterations: Int,
-      stepSize: Double,
-      miniBatchFraction: Double,
+      input: RDD[LabeledPoint],// input 训练样本，RDD格式为(lable[标签], features[特征])
+      numIterations: Int,// numIterations 迭代次数
+      stepSize: Double,// stepSize 每次迭代步长
+      miniBatchFraction: Double,// miniBatchFraction 每次迭代参与计算样本的比例
+      // 初始权重
       initialWeights: Vector): LinearRegressionModel = {
+    // 返回线性回归模型
     new LinearRegressionWithSGD(stepSize, numIterations, miniBatchFraction)
       .run(input, initialWeights)
   }

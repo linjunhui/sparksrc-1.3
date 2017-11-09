@@ -194,12 +194,15 @@ abstract class GeneralizedLinearAlgorithm[M <: GeneralizedLinearModel]
    * Run the algorithm with the configured parameters on an input RDD
    * of LabeledPoint entries starting from the initial weights provided.
    */
+  // 运行训练算法，要传入训练样本RDD (lable[标签], features[特征])、初始权重
   def run(input: RDD[LabeledPoint], initialWeights: Vector): M = {
 
+    // 特征维度，初始 -1
     if (numFeatures < 0) {
+      // 计算特征维度
       numFeatures = input.map(_.features.size).first()
     }
-
+    // 输入样本检测，检测是否cached
     if (input.getStorageLevel == StorageLevel.NONE) {
       logWarning("The input data is not directly cached, which may hurt performance if its"
         + " parent RDDs are also uncached.")
