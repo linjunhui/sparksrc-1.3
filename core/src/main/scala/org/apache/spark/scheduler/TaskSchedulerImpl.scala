@@ -51,6 +51,8 @@ import org.apache.spark.storage.BlockManagerId
  * acquire a lock on us, so we need to make sure that we don't try to lock the backend while
  * we are holding a lock on ourselves.
  */
+
+// 底层通过操作一个SchedulerBackend, 针对不同种类的cluster(standalone、yarn、mesos)，调度task
 private[spark] class TaskSchedulerImpl(
     val sc: SparkContext,
     val maxTaskFailures: Int,
@@ -120,10 +122,12 @@ private[spark] class TaskSchedulerImpl(
     this.dagScheduler = dagScheduler
   }
 
+  // TaskScheduler初始化
   def initialize(backend: SchedulerBackend) {
     this.backend = backend
     // temporarily set rootPool name to empty
     rootPool = new Pool("", schedulingMode, 0, 0)
+    // 设置任务调度的方式
     schedulableBuilder = {
       schedulingMode match {
         case SchedulingMode.FIFO =>

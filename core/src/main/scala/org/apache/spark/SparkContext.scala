@@ -358,7 +358,7 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
   val sparkUser = Utils.getCurrentUserName()
   executorEnvs("SPARK_USER") = sparkUser
 
-  // Create and start the scheduler
+  // Create and start the scheduler 创建并启动scheduler(DAGScheduler和TaskScheduler)
   private[spark] var (schedulerBackend, taskScheduler) =
     SparkContext.createTaskScheduler(this, master)
   private val heartbeatReceiver = env.actorSystem.actorOf(
@@ -377,7 +377,7 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
   }
 
   // start TaskScheduler after taskScheduler sets DAGScheduler reference in DAGScheduler's
-  // constructor
+  // constructor 启动TaskSechduler
   taskScheduler.start()
 
   val applicationId: String = taskScheduler.applicationId()
@@ -2107,6 +2107,7 @@ object SparkContext extends Logging {
       sc: SparkContext,
       master: String): (SchedulerBackend, TaskScheduler) = {
     // Regular expression used for local[N] and local[*] master formats
+    // String 类的 r() 方法 构造 一个正则表达式
     val LOCAL_N_REGEX = """local\[([0-9]+|\*)\]""".r
     // Regular expression for local[N, maxRetries], used in tests with failing tasks
     val LOCAL_N_FAILURES_REGEX = """local\[([0-9]+|\*)\s*,\s*([0-9]+)\]""".r
@@ -2123,6 +2124,7 @@ object SparkContext extends Logging {
     val MAX_LOCAL_TASK_FAILURES = 1
 
     master match {
+        // 本地模式
       case "local" =>
         val scheduler = new TaskSchedulerImpl(sc, MAX_LOCAL_TASK_FAILURES, isLocal = true)
         val backend = new LocalBackend(scheduler, 1)
@@ -2151,6 +2153,7 @@ object SparkContext extends Logging {
         scheduler.initialize(backend)
         (backend, scheduler)
 
+        // standalone 方式
       case SPARK_REGEX(sparkUrl) =>
         val scheduler = new TaskSchedulerImpl(sc)
         val masterUrls = sparkUrl.split(",").map("spark://" + _)
@@ -2178,6 +2181,7 @@ object SparkContext extends Logging {
         }
         (backend, scheduler)
 
+        // yarn-cluster模式
       case "yarn-standalone" | "yarn-cluster" =>
         if (master == "yarn-standalone") {
           logWarning(
@@ -2186,6 +2190,7 @@ object SparkContext extends Logging {
         val scheduler = try {
           val clazz = Class.forName("org.apache.spark.scheduler.cluster.YarnClusterScheduler")
           val cons = clazz.getConstructor(classOf[SparkContext])
+          // 反射创建YarnClusterScheduler
           cons.newInstance(sc).asInstanceOf[TaskSchedulerImpl]
         } catch {
           // TODO: Enumerate the exact reasons why it can fail
@@ -2194,16 +2199,19 @@ object SparkContext extends Logging {
             throw new SparkException("YARN mode not available ?", e)
           }
         }
+        // 通过反射
         val backend = try {
           val clazz =
             Class.forName("org.apache.spark.scheduler.cluster.YarnClusterSchedulerBackend")
           val cons = clazz.getConstructor(classOf[TaskSchedulerImpl], classOf[SparkContext])
+          // 返回一个 YarnClusterSchedulerBackend 实例
           cons.newInstance(scheduler, sc).asInstanceOf[CoarseGrainedSchedulerBackend]
         } catch {
           case e: Exception => {
             throw new SparkException("YARN mode not available ?", e)
           }
         }
+        // 初始化 backend
         scheduler.initialize(backend)
         (backend, scheduler)
 
