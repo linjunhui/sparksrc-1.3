@@ -52,7 +52,10 @@ import org.apache.spark.storage.BlockManagerId
  * we are holding a lock on ourselves.
  */
 
-// 底层通过操作一个SchedulerBackend, 针对不同种类的cluster(standalone、yarn、mesos)，调度task
+// 1.底层通过操作一个SchedulerBackend, 针对不同种类的cluster(standalone、yarn、mesos)，调度task
+// 2.它通过一个LocakBakend, 并且将isLocal参数设置为true，在本地模式工作
+// 3.它负责处理一些通用的逻辑，比如说决定多个job的调度顺序，启动推测任务执行
+// 4.客户端首先调用它的initialize方法和start方法，然后通过runTask() 方法提交task sets
 private[spark] class TaskSchedulerImpl(
     val sc: SparkContext,
     val maxTaskFailures: Int,
@@ -125,13 +128,15 @@ private[spark] class TaskSchedulerImpl(
   // TaskScheduler初始化
   def initialize(backend: SchedulerBackend) {
     this.backend = backend
-    // temporarily set rootPool name to empty
+    // temporarily set rootPool name to empty 调度池
     rootPool = new Pool("", schedulingMode, 0, 0)
     // 设置任务调度的方式
     schedulableBuilder = {
       schedulingMode match {
+          // 先进先出调度方式
         case SchedulingMode.FIFO =>
           new FIFOSchedulableBuilder(rootPool)
+          // 公平模式
         case SchedulingMode.FAIR =>
           new FairSchedulableBuilder(rootPool, conf)
       }

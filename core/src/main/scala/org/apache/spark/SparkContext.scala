@@ -2211,7 +2211,7 @@ object SparkContext extends Logging {
             throw new SparkException("YARN mode not available ?", e)
           }
         }
-        // 初始化 backend
+        // 初始化 scheduler
         scheduler.initialize(backend)
         (backend, scheduler)
 
