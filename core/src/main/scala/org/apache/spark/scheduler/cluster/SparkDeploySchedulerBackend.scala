@@ -46,6 +46,7 @@ private[spark] class SparkDeploySchedulerBackend(
     super.start()
 
     // The endpoint for executors to talk to us
+    // 准备环境 和 参数
     val driverUrl = AkkaUtils.address(
       AkkaUtils.protocol(actorSystem),
       SparkEnv.driverActorSystemName,
@@ -82,9 +83,11 @@ private[spark] class SparkDeploySchedulerBackend(
     val command = Command("org.apache.spark.executor.CoarseGrainedExecutorBackend",
       args, sc.executorEnvs, classPathEntries ++ testingClassPath, libraryPathEntries, javaOpts)
     val appUIAddress = sc.ui.map(_.appUIAddress).getOrElse("")
+    // 当前application的一些情况，包括了application最大需要的cpu core， 每个slave上的内存
     val appDesc = new ApplicationDescription(sc.appName, maxCores, sc.executorMemory, command,
       appUIAddress, sc.eventLogDir, sc.eventLogCodec)
 
+    // 创建AppClient
     client = new AppClient(sc.env.actorSystem, masters, appDesc, this, conf)
     client.start()
 
