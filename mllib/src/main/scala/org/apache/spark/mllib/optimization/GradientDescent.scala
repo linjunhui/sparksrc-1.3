@@ -147,6 +147,8 @@ object GradientDescent extends Logging {
    *         weights for every feature, and the second element is an array containing the
    *         stochastic loss computed for every iteration.
    */
+
+  // 批量梯度下降算法 θ：θ-αΣ[h(x(i) - y(i)]x(i)
   def runMiniBatchSGD(
       data: RDD[(Double, Vector)],
       gradient: Gradient,
@@ -195,13 +197,17 @@ object GradientDescent extends Logging {
         .treeAggregate((BDV.zeros[Double](n), 0.0, 0L))(  // zeroValue
           seqOp = (c, v) => {
             // c: (grad, loss, count), v: (label, features) LeastSquaresGradient或其他中的compute
+            // 计算一个样本的损失
             val l = gradient.compute(v._2, v._1, bcWeights.value, Vectors.fromBreeze(c._1))
+            // 所有样本的损失求和
             (c._1, c._2 + l, c._3 + 1)
           },
           combOp = (c1, c2) => {
             // c: (grad, loss, count)
+            // 将所有的项相加， 还是计算损失和
             (c1._1 += c2._1, c1._2 + c2._2, c1._3 + c2._3)
           })
+          // 一次treeAggregate 就是一次迭代将求所有样本的损失和
 
       if (miniBatchSize > 0) {
         /**

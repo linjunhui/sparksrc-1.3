@@ -77,6 +77,7 @@ class SimpleUpdater extends Updater {
       regParam: Double): (Vector, Double) = {
     val thisIterStepSize = stepSize / math.sqrt(iter)
     val brzWeights: BV[Double] = weightsOld.toBreeze.toDenseVector
+    // 更新权值就是 θ
     brzAxpy(-thisIterStepSize, gradient.toBreeze, brzWeights)
 
     (Vectors.fromBreeze(brzWeights), 0)
