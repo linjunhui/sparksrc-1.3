@@ -87,7 +87,7 @@ private[spark] class SparkDeploySchedulerBackend(
     val appDesc = new ApplicationDescription(sc.appName, maxCores, sc.executorMemory, command,
       appUIAddress, sc.eventLogDir, sc.eventLogCodec)
 
-    // 创建AppClient
+    // 创建AppClient, 传入环境中的actorSystem
     client = new AppClient(sc.env.actorSystem, masters, appDesc, this, conf)
     client.start()
 

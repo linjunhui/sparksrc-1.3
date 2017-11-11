@@ -53,6 +53,7 @@ private[spark] class AppClient(
   val REGISTRATION_RETRIES = 3
 
   var masterAddress: Address = null
+  // 指向actor 实例, ActorRef(即:Actor Reference Actor的引用)
   var actor: ActorRef = null
   var appId: String = null
   var registered = false
@@ -64,6 +65,7 @@ private[spark] class AppClient(
     var alreadyDead = false  // To avoid calling listener.dead() multiple times
     var registrationRetryTimer: Option[Cancellable] = None
 
+    // Actor 启动前调用，用于完成初始化工作
     override def preStart() {
       context.system.eventStream.subscribe(self, classOf[RemotingLifecycleEvent])
       try {
@@ -186,6 +188,8 @@ private[spark] class AppClient(
 
   def start() {
     // Just launch an actor; it will call back into the listener.
+    // 启动一个actor,ActorSystem作为容器通过actorOf方法创建一个actor,创建完就已启动
+    // actorOf->makeChild[完成了actor的创建、初始化和启动]
     actor = actorSystem.actorOf(Props(new ClientActor))
   }
 
