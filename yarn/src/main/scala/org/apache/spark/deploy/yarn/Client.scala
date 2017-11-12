@@ -83,16 +83,19 @@ private[spark] class Client(
    * creating applications and setting up the application submission context. This was not
    * available in the alpha API.
    */
+  // 提交应用
   def submitApplication(): ApplicationId = {
+    // 初始化并启动yarnClient
     yarnClient.init(yarnConf)
     yarnClient.start()
 
     logInfo("Requesting a new application from cluster with %d NodeManagers"
       .format(yarnClient.getYarnClusterMetrics.getNumNodeManagers))
 
-    // Get a new application from our RM
+    // Get a new application from our RM,创建app
     val newApp = yarnClient.createApplication()
     val newAppResponse = newApp.getNewApplicationResponse()
+    // 获取rm给app分配的id
     val appId = newAppResponse.getApplicationId()
 
     // Verify whether the cluster has enough resources for our AM
@@ -644,6 +647,7 @@ object Client extends Logging {
     val sparkConf = new SparkConf
 
     val args = new ClientArguments(argStrings, sparkConf)
+    // 创建client并运行
     new Client(args, sparkConf).run()
   }
 

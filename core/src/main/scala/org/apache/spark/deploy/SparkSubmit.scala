@@ -108,6 +108,7 @@ object SparkSubmit {
       printStream.println(appArgs)
     }
     appArgs.action match {
+        // 提交
       case SparkSubmitAction.SUBMIT => submit(appArgs)
       case SparkSubmitAction.KILL => kill(appArgs)
       case SparkSubmitAction.REQUEST_STATUS => requestStatus(appArgs)
@@ -139,8 +140,9 @@ object SparkSubmit {
    * main class.
    */
   private[spark] def submit(args: SparkSubmitArguments): Unit = {
+    // 解析参数，准备提交的环境
     val (childArgs, childClasspath, sysProps, childMainClass) = prepareSubmitEnvironment(args)
-
+    // 定义方法
     def doRunMain(): Unit = {
       if (args.proxyUser != null) {
         val proxyUser = UserGroupInformation.createProxyUser(args.proxyUser,
@@ -208,7 +210,7 @@ object SparkSubmit {
     val sysProps = new HashMap[String, String]()
     var childMainClass = ""
 
-    // Set the cluster manager
+    // Set the cluster manager，根据参数设置提交的模式
     val clusterManager: Int = args.master match {
       case m if m.startsWith("yarn") => YARN
       case m if m.startsWith("spark") => STANDALONE
@@ -217,7 +219,7 @@ object SparkSubmit {
       case _ => printErrorAndExit("Master must start with yarn, spark, mesos, or local"); -1
     }
 
-    // Set the deploy mode; default is client mode
+    // Set the deploy mode; default is client mode，cluster or client模式，默认client
     var deployMode: Int = args.deployMode match {
       case "client" | null => CLIENT
       case "cluster" => CLUSTER
@@ -436,6 +438,7 @@ object SparkSubmit {
     }
 
     // In yarn-cluster mode, use yarn.Client as a wrapper around the user class
+    // Yarn-cluster 模式将要执行的主类设置成org.apache.spark.deploy.yarn.Client
     if (isYarnCluster) {
       childMainClass = "org.apache.spark.deploy.yarn.Client"
       if (args.isPython) {
@@ -502,12 +505,12 @@ object SparkSubmit {
    * running cluster deploy mode or python applications.
    */
   private def runMain(
-      childArgs: Seq[String],
-      childClasspath: Seq[String],
-      sysProps: Map[String, String],
-      childMainClass: String,
+      childArgs: Seq[String], // 执行用户程序运行传入的参数
+      childClasspath: Seq[String],  // 用户的程序的path/...jar
+      sysProps: Map[String, String],  // 系统中的相关属性
+      childMainClass: String,   // 用户程序要执行的主类
       verbose: Boolean): Unit = {
-    if (verbose) {
+    if (verbose) { // 是否开启了啰嗦模式
       printStream.println(s"Main class:\n$childMainClass")
       printStream.println(s"Arguments:\n${childArgs.mkString("\n")}")
       printStream.println(s"System properties:\n${sysProps.mkString("\n")}")
@@ -525,6 +528,7 @@ object SparkSubmit {
       }
     Thread.currentThread.setContextClassLoader(loader)
 
+    // 遍历用户目录下的所有jar包，价值jar包
     for (jar <- childClasspath) {
       addJarToClasspath(jar, loader)
     }
@@ -536,6 +540,7 @@ object SparkSubmit {
     var mainClass: Class[_] = null
 
     try {
+      // 通过反射加载用户的程序主类
       mainClass = Class.forName(childMainClass, true, loader)
     } catch {
       case e: ClassNotFoundException =>
@@ -552,7 +557,9 @@ object SparkSubmit {
       printWarning("Subclasses of scala.App may not work correctly. Use a main() method instead.")
     }
 
+    // 拿到main方法
     val mainMethod = mainClass.getMethod("main", new Array[String](0).getClass)
+    // 判断 main方法的修饰符是不是static
     if (!Modifier.isStatic(mainMethod.getModifiers)) {
       throw new IllegalStateException("The main method in the given main class must be static")
     }
@@ -567,6 +574,7 @@ object SparkSubmit {
     }
 
     try {
+      // 反射调用main方法，这里开始执行用的程序
       mainMethod.invoke(null, childArgs.toArray)
     } catch {
       case t: Throwable =>

@@ -69,6 +69,7 @@ private[spark] class AppClient(
     override def preStart() {
       context.system.eventStream.subscribe(self, classOf[RemotingLifecycleEvent])
       try {
+        // 注册到Master
         registerWithMaster()
       } catch {
         case e: Exception =>
@@ -79,9 +80,11 @@ private[spark] class AppClient(
     }
 
     def tryRegisterAllMasters() {
+      // 遍历master的url, 给master发送注册信息
       for (masterAkkaUrl <- masterAkkaUrls) {
         logInfo("Connecting to master " + masterAkkaUrl + "...")
         val actor = context.actorSelection(masterAkkaUrl)
+        // 发注app册信息到master
         actor ! RegisterApplication(appDescription)
       }
     }

@@ -148,6 +148,7 @@ class SparkConf(loadDefaults: Boolean) extends Cloneable with Logging {
    * Use Kryo serialization and register the given set of classes with Kryo.
    * If called multiple times, this will append the classes from all calls together.
    */
+  // 注册需要使用 kryo序列化的类
   def registerKryoClasses(classes: Array[Class[_]]): SparkConf = {
     val allClassNames = new LinkedHashSet[String]()
     allClassNames ++= get("spark.kryo.classesToRegister", "").split(',').filter(!_.isEmpty)
